@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Incident Classification</title>
+</head>
+<body>
+    <h1>Incident Classification</h1>
+    <form action="/predict" method="post">
+        <label for="description">Incident Description:</label>
+        <input type="text" id="description" name="description" required>
+        <br>
+        <label for="model_name">Select Model:</label>
+        <select id="model_name" name="model_name">
+            <option value="Naive Bayes">Naive Bayes</option>
+            <option value="Logistic Regression">Logistic Regression</option>
+            <option value="SVM">SVM</option>
+            <option value="Random Forest">Random Forest</option>
+        </select>
+        <br>
+        <input type="submit" value="Predict">
+    </form>
+    {% if prediction_text %}
+        <h2>{{ prediction_text }}</h2>
+    {% endif %}
+</body>
+</html>
