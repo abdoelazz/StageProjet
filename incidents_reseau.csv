@@ -3000,3 +3000,5 @@ ID d'incident,Timestamp,Type d'incident,Description,Severité,Statut,Responsable
 2999.0,2023-03-20,Mise à jour échouée,échec mise jour logiciel,Critique,Résolu,Equipe Support
 3000.0,2023-05-03,Surcharge,impossible daccéder internet,Moyenne,En cours,Equipe Systèmes
 ,,Problème de connexion,disque dur est tombé panne,,,
+,,Problème de connexion,carte réseau ne répond plus,,,
+,,Surcharge,échec mise jour logiciel,,,
