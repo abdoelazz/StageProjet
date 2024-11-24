@@ -4,11 +4,8 @@
     <title>Incident Classification</title>
 </head>
 <body>
-    <h1>Incident Classification</h1>
+    <h1>Classification des Logs</h1>
     <form action="/predict" method="post">
-        <label for="description">Incident Description:</label>
-        <input type="text" id="description" name="description" required>
-        <br>
         <label for="model_name">Select Model:</label>
         <select id="model_name" name="model_name">
             <option value="Naive Bayes">Naive Bayes</option>
@@ -19,8 +16,25 @@
         <br>
         <input type="submit" value="Predict">
     </form>
+
     {% if prediction_text %}
         <h2>{{ prediction_text }}</h2>
+
+        <form action="/retrain" method="post">
+            <input type="hidden" id="retrain_model_name" name="model_name" value="">
+            <input type="submit" value="Retrain">
+        </form>
     {% endif %}
+
+    <script>
+        const modelSelect = document.getElementById('model_name');
+        const retrainInput = document.getElementById('retrain_model_name');
+        
+        modelSelect.addEventListener('change', function () {
+            retrainInput.value = modelSelect.value;
+        });
+
+        retrainInput.value = modelSelect.value;
+    </script>
 </body>
 </html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Retraining Report</title>
+</head>
+<body>
+    <h1>Retraining Report for {{ model_name }}</h1>
+    <h2>Old Model</h2>
+    <p>Accuracy: {{ old_model_accuracy }}</p>
+    <h3>Detailed Metrics</h3>
+    <pre>{{ old_model_report | tojson(indent=2) }}</pre>
+
+    <h2>New Model</h2>
+    <p>Accuracy: {{ new_model_accuracy }}</p>
+    <h3>Detailed Metrics</h3>
+    <pre>{{ new_model_report | tojson(indent=2) }}</pre>
+
+    {% if new_model_accuracy > old_model_accuracy %}
+        <h3>Result: The new model outperformed the old model.</h3>
+    {% else %}
+        <h3>Result: The old model is still better than the new model.</h3>
+    {% endif %}
+
+    <form action="/savemodel" method="post">
+        <input type="hidden" name="model_name" value="{{ model_name }}">
+        <button type="submit">Save New Model</button>
+    </form>
+    
+    <a href="/">Back to Home</a>
+</body>
+</html>
