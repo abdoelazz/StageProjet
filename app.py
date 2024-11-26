@@ -54,18 +54,17 @@ output_folder = "./predictions"
 def process_files(request: Request, model_name: str = Form(...)):
     # Step 1: Check for files in the input folder
     try:
-        csv_files = [f for f in os.listdir(input_folder) if f.endswith('.csv')]
+        csv_files = [f for f in os.listdir(input_folder) if f.endswith('.csv') and not f.endswith('predicted.csv')]
         if not csv_files:
-            return templates.TemplateResponse("home.html", {
+            return templates.TemplateResponse("prediction.html", {
                 "request": request,
                 "prediction_text": "No CSV files found in the input folder."
             })
     except Exception as e:
-        return templates.TemplateResponse("home.html", {
+        return templates.TemplateResponse("prediction.html", {
             "request": request,
             "prediction_text": f"Error accessing the input folder: {e}"
         })
-    
     # Step 2: Process each file
     for csv_file in csv_files:
         input_path = os.path.join(input_folder, csv_file)
@@ -75,7 +74,6 @@ def process_files(request: Request, model_name: str = Form(...)):
         input_df = pd.read_csv(input_path)
         if "Description" not in input_df.columns:
             continue  # Skip files without a "Description" column
-        
         descriptions = input_df["Description"].tolist()
         # Preprocess and predict
         preprocessed_descriptions = [preprocess_text(desc) for desc in descriptions]
@@ -88,17 +86,21 @@ def process_files(request: Request, model_name: str = Form(...)):
         
         # Save the updated file to the output folder
         output_df.to_csv(output_path, index=False)
+        new_file_name = csv_file.replace('.csv', '_predicted.csv')
+        trained_file_path = os.path.join(input_folder, new_file_name)
+        os.rename(input_path, trained_file_path)
     
-    return templates.TemplateResponse("home.html", {
+    return templates.TemplateResponse("prediction.html", {
         "request": request,
-        "prediction_text": f"All files processed. Results saved to '{output_folder}'."
+        "prediction_text": f"All files processed. Results saved to '{output_folder}'.",
+        "model_name" : model_name
     })
 @app.post("/retrain")
 def retrain_models(request: Request, model_name: str = Form(...)):
     try:
         csv_files = [
             f for f in os.listdir(output_folder)
-            if f.endswith('.csv') and not f.endswith('trained.csv')
+            if f.endswith('.csv') and not f.endswith('trained.csv') and not f.endswith('validated.csv') 
         ]
         if not csv_files:
             return templates.TemplateResponse("home.html", {
@@ -114,9 +116,10 @@ def retrain_models(request: Request, model_name: str = Form(...)):
     # Load existing data
     existing_data = pd.read_csv(data_file)
     updated_data = existing_data
-    
+    print("retraining_data : \n")
     # Merge new data
     for csv_file in csv_files:
+        print(csv_file)
         newdata_path = os.path.join(output_folder, csv_file)
         newdata_df = pd.read_csv(newdata_path)
         
@@ -126,7 +129,6 @@ def retrain_models(request: Request, model_name: str = Form(...)):
         
         # Concatenate new data to the existing data
         updated_data = pd.concat([updated_data, newdata_df], ignore_index=True)
-        print(newdata_path)
         # Rename the file to mark it as processed
         new_file_name = csv_file.replace('.csv', '_trained.csv')
         trained_file_path = os.path.join(output_folder, new_file_name)
@@ -173,6 +175,34 @@ def retrain_models(request: Request, model_name: str = Form(...)):
 
 @app.post("/savemodel")
 def save_model(request: Request, model_name: str = Form(...)):
+    try:
+        csv_files = [
+            f for f in os.listdir(output_folder)
+            if f.endswith('trained.csv')
+        ]
+        if not csv_files:
+            return templates.TemplateResponse("saved.html", {
+                "request": request,
+                "prediction_text": "No CSV files found in the output folder to save."
+            })
+    except Exception as e:
+        return templates.TemplateResponse("saved.html", {
+            "request": request,
+            "prediction_text": f"Error accessing the output folder: {e}"
+        })
+    existing_data = pd.read_csv(data_file)
+    all_new_data = existing_data
+    print("saving training_data : \n")
+    for csv_file in csv_files:
+        print(csv_file)
+        newdata_path = os.path.join(output_folder, csv_file)
+        newdata_df = pd.read_csv(newdata_path)
+        # Concatenate new data to the existing data
+        all_new_data = pd.concat([all_new_data, newdata_df], ignore_index=True)
+        new_file_name = csv_file.replace('.csv', '_validated.csv')
+        trained_file_path = os.path.join(output_folder, new_file_name)
+        os.rename(newdata_path, trained_file_path)
+    all_new_data.to_csv(data_file, index=False)
     # Paths for the new and old models
     new_model_path = os.path.join("models", f"new_{model_name}_model.pkl")
     old_model_path = os.path.join("models", f"{model_name}_model.pkl")
@@ -184,7 +214,7 @@ def save_model(request: Request, model_name: str = Form(...)):
     try:
         # Check if the new model exists
         if not os.path.exists(new_model_path):
-            return templates.TemplateResponse("home.html", {
+            return templates.TemplateResponse("saved.html", {
                 "request": request,
                 "prediction_text": f"No new model found for '{model_name}'. Retrain the model first."
             })
@@ -205,6 +235,56 @@ def save_model(request: Request, model_name: str = Form(...)):
         return templates.TemplateResponse("saved.html", {
             "request": request,
             "message": f"Error saving the model: {e}"
+        })
+
+
+@app.post("/dontsavemodel")
+def dontsave_model(request: Request, model_name: str = Form(...)):
+    try:
+        csv_files = [
+            f for f in os.listdir(output_folder)
+            if f.endswith('trained.csv')
+        ]
+        if not csv_files:
+            return templates.TemplateResponse("saved.html", {
+                "request": request,
+                "prediction_text": "No CSV files found in the training folder to delete."
+            })
+    except Exception as e:
+        return templates.TemplateResponse("saved.html", {
+            "request": request,
+            "prediction_text": f"Error accessing the input folder: {e}"
+        })
+    print("not saving training_data : \n")
+    for csv_file in csv_files:
+        print(csv_file)
+        newdata_path = os.path.join(output_folder, csv_file)
+        new_file_name = csv_file.replace('.csv', '_not_validated.csv')
+        trained_file_path = os.path.join(output_folder, new_file_name)
+        os.rename(newdata_path, trained_file_path)
+
+    # Path for the new model
+    new_model_path = os.path.join("models", f"new_{model_name}_model.pkl")
+
+    try:
+        # Check if the new model exists
+        if not os.path.exists(new_model_path):
+            return templates.TemplateResponse("saved.html", {
+                "request": request,
+                "prediction_text": f"No new model found for '{model_name}'. Retrain the model first."
+            })
+        
+        # Delete the new model file
+        os.remove(new_model_path)
+        
+        return templates.TemplateResponse("saved.html", {
+            "request": request,
+            "prediction_text": f"The new model for '{model_name}' has been successfully deleted."
+        })
+    except Exception as e:
+        return templates.TemplateResponse("saved.html", {
+            "request": request,
+            "prediction_text": f"Error deleting the new model: {e}"
         })
 
     

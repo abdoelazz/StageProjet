@@ -17,24 +17,5 @@
         <input type="submit" value="Predict">
     </form>
 
-    {% if prediction_text %}
-        <h2>{{ prediction_text }}</h2>
-
-        <form action="/retrain" method="post">
-            <input type="hidden" id="retrain_model_name" name="model_name" value="">
-            <input type="submit" value="Retrain">
-        </form>
-    {% endif %}
-
-    <script>
-        const modelSelect = document.getElementById('model_name');
-        const retrainInput = document.getElementById('retrain_model_name');
-        
-        modelSelect.addEventListener('change', function () {
-            retrainInput.value = modelSelect.value;
-        });
-
-        retrainInput.value = modelSelect.value;
-    </script>
 </body>
 </html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Incident Classification</title>
+</head>
+<body>
+    <h1>Résultats de la Classification des Logs</h1>
+
+    {% if prediction_text %}
+        <h2>{{ prediction_text }}</h2>
+
+        <!-- Display the selected model name -->
+        <p>Model utilisé : <strong>{{ model_name }}</strong></p>
+
+        <!-- Form to retrain the model -->
+        <form action="/retrain" method="post">
+            <input type="hidden" id="retrain_model_name" name="model_name" value="{{ model_name }}">
+            <input type="submit" value="Retrain">
+        </form>
+    {% endif %}
+</body>
+</html>

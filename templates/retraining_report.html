@@ -25,6 +25,10 @@
         <input type="hidden" name="model_name" value="{{ model_name }}">
         <button type="submit">Save New Model</button>
     </form>
+    <form action="/dontsavemodel" method="post">
+        <input type="hidden" name="model_name" value="{{ model_name }}">
+        <button type="submit">Dont Save New Model</button>
+    </form>
     
     <a href="/">Back to Home</a>
 </body>
