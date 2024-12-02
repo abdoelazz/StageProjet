@@ -5,6 +5,9 @@
 </head>
 <body>
     <h1>Classification des Logs</h1>
+    {% if error_text %}
+        <h2>{{ error_text }}</h2>
+    {% endif %}
     <form action="/predict" method="post">
         <label for="model_name">Select Model:</label>
         <select id="model_name" name="model_name">

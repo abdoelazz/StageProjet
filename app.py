@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -11,8 +13,10 @@ import os
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from datetime import datetime
+from nltk.stem.snowball import SnowballStemmer
 
 
+stemmer = SnowballStemmer("french")
 # Initialize NLTK and download stopwords
 nltk.download('stopwords')
 stop_words = set(stopwords.words('french'))
@@ -39,8 +43,20 @@ data_file = 'incidents_reseau.csv'
 
 # Helper function to preprocess text
 def preprocess_text(text):
-    text = text.lower().translate(str.maketrans('', '', string.punctuation))
-    return ' '.join([word for word in text.split() if word not in stop_words])
+    # Convertir en minuscules
+    text = text.lower()
+    # Supprimer la ponctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    # Supprimer les stopwords
+    text = ' '.join([word for word in text.split() if word not in stop_words])
+    # supprimer les nombres
+    text = re.sub(r'\d+', '', text)
+    # normaliser les lettres qui ont des accents
+    text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    # Appliquer le stemming
+    text = ' '.join([stemmer.stem(word) for word in text.split()])
+    
+    return text
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
@@ -56,14 +72,14 @@ def process_files(request: Request, model_name: str = Form(...)):
     try:
         csv_files = [f for f in os.listdir(input_folder) if f.endswith('.csv') and not f.endswith('predicted.csv')]
         if not csv_files:
-            return templates.TemplateResponse("prediction.html", {
+            return templates.TemplateResponse("home.html", {
                 "request": request,
-                "prediction_text": "No CSV files found in the input folder."
+                "error_text": "No CSV files found in the input folder."
             })
     except Exception as e:
-        return templates.TemplateResponse("prediction.html", {
+        return templates.TemplateResponse("home.html", {
             "request": request,
-            "prediction_text": f"Error accessing the input folder: {e}"
+            "error_text": f"Error accessing the input folder: {e}"
         })
     # Step 2: Process each file
     for csv_file in csv_files:
@@ -105,12 +121,12 @@ def retrain_models(request: Request, model_name: str = Form(...)):
         if not csv_files:
             return templates.TemplateResponse("home.html", {
                 "request": request,
-                "prediction_text": "No CSV files found in the training folder."
+                "error_text": "No CSV files found in the training folder."
             })
     except Exception as e:
         return templates.TemplateResponse("home.html", {
             "request": request,
-            "prediction_text": f"Error accessing the input folder: {e}"
+            "error_text": f"Error accessing the output folder: {e}"
         })
     
     # Load existing data
@@ -147,7 +163,7 @@ def retrain_models(request: Request, model_name: str = Form(...)):
     if old_model is None:
         return templates.TemplateResponse("home.html", {
             "request": request,
-            "prediction_text": f"Model '{model_name}' not found."
+            "error_text": f"Model '{model_name}' not found."
         })
     
     # Evaluate the old model
@@ -181,14 +197,14 @@ def save_model(request: Request, model_name: str = Form(...)):
             if f.endswith('trained.csv')
         ]
         if not csv_files:
-            return templates.TemplateResponse("saved.html", {
+            return templates.TemplateResponse("home.html", {
                 "request": request,
-                "prediction_text": "No CSV files found in the output folder to save."
+                "error_text": "No CSV files found in the output folder to save."
             })
     except Exception as e:
-        return templates.TemplateResponse("saved.html", {
+        return templates.TemplateResponse("home.html", {
             "request": request,
-            "prediction_text": f"Error accessing the output folder: {e}"
+            "error_text": f"Error accessing the output folder: {e}"
         })
     existing_data = pd.read_csv(data_file)
     all_new_data = existing_data
@@ -246,14 +262,14 @@ def dontsave_model(request: Request, model_name: str = Form(...)):
             if f.endswith('trained.csv')
         ]
         if not csv_files:
-            return templates.TemplateResponse("saved.html", {
+            return templates.TemplateResponse("home.html", {
                 "request": request,
-                "prediction_text": "No CSV files found in the training folder to delete."
+                "error_text": "No CSV files found in the training folder to delete."
             })
     except Exception as e:
-        return templates.TemplateResponse("saved.html", {
+        return templates.TemplateResponse("home.html", {
             "request": request,
-            "prediction_text": f"Error accessing the input folder: {e}"
+            "error_text": f"Error accessing the input folder: {e}"
         })
     print("not saving training_data : \n")
     for csv_file in csv_files:
