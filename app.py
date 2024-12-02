@@ -1,5 +1,3 @@
-import re
-import unicodedata
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -13,10 +11,8 @@ import os
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from datetime import datetime
-from nltk.stem.snowball import SnowballStemmer
 
 
-stemmer = SnowballStemmer("french")
 # Initialize NLTK and download stopwords
 nltk.download('stopwords')
 stop_words = set(stopwords.words('french'))
@@ -43,20 +39,8 @@ data_file = 'incidents_reseau.csv'
 
 # Helper function to preprocess text
 def preprocess_text(text):
-    # Convertir en minuscules
-    text = text.lower()
-    # Supprimer la ponctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
-    # Supprimer les stopwords
-    text = ' '.join([word for word in text.split() if word not in stop_words])
-    # supprimer les nombres
-    text = re.sub(r'\d+', '', text)
-    # normaliser les lettres qui ont des accents
-    text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
-    # Appliquer le stemming
-    text = ' '.join([stemmer.stem(word) for word in text.split()])
-    
-    return text
+    text = text.lower().translate(str.maketrans('', '', string.punctuation))
+    return ' '.join([word for word in text.split() if word not in stop_words])
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request):
